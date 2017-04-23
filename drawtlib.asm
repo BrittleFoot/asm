@@ -1,6 +1,17 @@
+biosRomSegment          = 0040h
 
+biosActiveVideoMode     = 0049h
+biosTextColumnsCount    = 004Ah
+biosVideoPageOffset     = 004Eh
+biosActiveVideoPage     = 0062h
+biosVideoCardPort       = 0063h
+biosVideoCrtMode        = 0065h
 
-VMEMORY_SEGMENT = 0B800h
+oldCrtRegister   db 00h
+
+VMEMORY_SEGMENT  dw 0B800h
+VMEMORY_SEGMENT7 dw 0B000h
+
 V_HEIGHT  db  19h
 V_WIDTH   db  0h
 
@@ -10,18 +21,28 @@ OLD_VPAGE   db  0
 
 CURR_VMODE  db  0
 CURR_VPAGE  db  0
+TITLECOLOR  db  0
+BLINK_STAT  db  0
+MODE7COLOR  db  0
 
 
 draw_table:
-    ; ah:al 
+    ; ah:al  -  mode:page
+    ; bh - title color 
+    ; bl == 1 <=> global blinking off
     mov     [CURR_VMODE], ah
     mov     [CURR_VPAGE], al
+    mov     [TITLECOLOR], bh
+    mov     [BLINK_STAT], bl
+    mov     [MODE7COLOR], ch
 
-    mov     ax, 0f00h
-    int     10h
 
-    mov     [OLD_VMODE], al
-    mov     [OLD_VPAGE], bh;
+    @@222:
+
+    call    getCurrentVideoParams
+
+    mov     [OLD_VMODE], ah
+    mov     [OLD_VPAGE], al;
 
     mov     ah, 00h
     mov     al, [CURR_VMODE]
@@ -31,18 +52,33 @@ draw_table:
     mov     al, [CURR_VPAGE]
     int     10h;
 
+    mov  bl, byte ptr [BLINK_STAT]
+    test bl, bl
+    jz @@222
+    call disableBlink
+
     mov     ax, 0100h
     mov     cx, 2000h
     int     10h
 
-    mov     ax, 0f00h
-    int     10h
-    mov     [V_WIDTH], ah
+
+    push    ds
+    mov     ax, biosRomSegment
+    mov     ds, ax
+    mov     ax, ds:[biosTextColumnsCount]
+    pop     ds
+    mov     [V_WIDTH], al
 
     push    ax bx cx dx ds es di
     ;\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-    mov     ax, VMEMORY_SEGMENT
+    cmp     byte ptr [CURR_VMODE], 07h
+    je      @@2
+    @@1:    mov     ax, VMEMORY_SEGMENT
+    jmp     @@3
+    @@2:    mov     ax, VMEMORY_SEGMENT7
+    @@3:
+
     mov     es, ax
     xor     di, di
 
@@ -112,8 +148,6 @@ draw_table:
         stosw;
         jmp @@nxt    
 
-        @@loop1:
-            jmp @@loop
 
 
         @@nxt:
@@ -135,8 +169,13 @@ draw_table:
         jl      @@fourth 
         cmp     bx, 50h
         jl      @@fifth
+        cmp     bx, 0F0h
+        jge     @@last
         add     ax, 0101h
         jmp     @@color_was_chosen
+
+        @@loop1:
+            jmp @@loop
 
         @@first:
             inc     ah
@@ -158,6 +197,15 @@ draw_table:
             mov     ah, 5fh
             inc     al 
             jmp     @@color_was_chosen
+        @@last:
+            cmp     [CURR_VMODE], 07h
+            je      @@apply_color
+            add     ax, 0101h
+            jmp     @@color_was_chosen
+
+        @@apply_color:
+            inc     al
+            mov     ah, [MODE7COLOR]
 
         @@color_was_chosen:
 
@@ -180,8 +228,8 @@ draw_table:
         pop     cx bx ax
 
         cmp     bx, 100h
-        jl      @@loop1
 
+        jl      @@loop1
     ;///////////////////////////
 
     mov     ax, 0000h
@@ -197,6 +245,8 @@ draw_table:
     mov     al, [OLD_VPAGE]
     int     10h;
 
+    call    restoreBlink
+
 
     ret
 
@@ -209,17 +259,17 @@ print_info:
 
 
     mov     al, [CURR_VMODE]
-    call    byte_to_str
+    call    byte_to_str1
     mov     vm, ax 
 
     mov     al, [CURR_VPAGE]
-    call    byte_to_str
+    call    byte_to_str1
     mov     pg, ax
 
     xor     bx, bx
 
     @@loop:
-        mov     ah, 00000010h
+        mov     ah, [TITLECOLOR]
         mov     al, infostr[bx]
         stosw
 
@@ -240,7 +290,64 @@ pg      dw  3030h
         db  "h   "
 
 
-byte_to_str:
+
+
+
+restoreBlink:
+    push    ax es dx bx
+
+    mov     ax, biosRomSegment
+    mov     es, ax
+    mov     dx, es:[biosVideoCardPort]
+    add     dx, 4
+
+    mov     bl, cs:[oldCrtRegister]
+    and     bl, 20h
+    mov     al, es:[biosVideoCrtMode]
+    or      al, bl
+
+    out     dx, al
+    mov     es:[biosVideoCrtMode], al
+
+    pop     bx dx es ax
+    ret
+
+disableBlink:
+
+    push    bx dx es
+    mov     ax, 1003h
+    xor     bx, bx
+    int     10h
+
+    mov     ax, biosRomSegment
+    mov     es, ax
+    mov     dx, es:[biosVideoCardPort]  
+    add     dx, 4                       
+
+    mov     al, es:[biosVideoCrtMode]
+    and     al, 0DFh                 
+    out     dx, al                   
+    mov     es:[biosVideoCrtMode], al
+    mov     cs:[oldCrtRegister], al
+
+    pop     es dx bx
+    ret
+
+
+getCurrentVideoParams:
+        push    es
+
+        mov     ax, biosRomSegment
+        mov     es, ax
+
+        mov     ah, es:[biosActiveVideoMode]
+        mov     al, es:[biosActiveVideoPage]
+
+        pop     es
+        ret
+
+
+byte_to_str1:
 ;  al -> byte
 ;  ax <- hex symbols of this byte
     push    bx dx

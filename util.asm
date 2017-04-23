@@ -1,5 +1,14 @@
 
 
+parse_int2:
+; in -> bx - pointer to the string where 
+;   [bx] - length
+;   and bx+1 pointed onto string begin
+    xor     dx, dx
+    mov     dl, byte ptr [bx]
+    inc     bx
+    call    parse_int
+    ret
 
 parse_int proc near
 ; in:
@@ -86,3 +95,59 @@ pow proc near
     xor dx, dx
     ret
 pow endp
+
+
+byte_to_str:
+;  al -> byte
+;  ax <- hex symbols of this byte
+    push    bx dx
+    mov     ah, 0
+    xor     bx, bx
+    mov     bl, 10h
+    div     bl
+
+    add     ax, 3030h
+    cmp     ah, 3Ah
+    jl      @@1
+    add     ax, 0700h
+
+    @@1:
+    cmp     al, 3Ah
+    jl      @@2
+    add     ax, 0007h
+
+    @@2:
+
+    pop     dx bx
+    ret
+
+
+print_hex_ax:
+    ; ax - target
+    ; if CF is on then format HHh else format HH 
+    push    dx
+
+    mov     dx, ax
+    mov     ax, 0200h
+    int     21h
+    xchg    dh, dl
+    int     21h
+
+    jnc     @@return
+    mov     dl, 'h'
+    int     21h
+
+    @@return:
+    
+    pop     dx
+    ret
+
+
+sEndl       db  0Dh, 0Ah, 24h
+endl:
+    push    ax dx
+    mov     ax, 0900h
+    mov     dx, offset sEndl
+    int     21h
+    pop     dx ax
+    ret
