@@ -7,16 +7,24 @@ start:
     jmp main
 
 
-kbd_status  db 00000111b
-
 
 main:
-    call update_leds
+    xor ax, ax
+
+    @@loop:
+        hlt
+        inc kbd_status
+        and kbd_status, 00000111b
+        call update_leds
+        jmp @@loop
 
     int 20h
 
 
 
+
+
+kbd_status  db 00000000b
 
 LED_CHANGE_REQ  = 0EDh
 LED_CHANGE_ACK  = 0FAh
@@ -41,10 +49,6 @@ update_leds:
      ret
 
 
-
-;------------------;
-;  keyboard wait   ;
-;------------------;
 kbd_wait:
         jmp @@0
 @@0:    in       al, 64h
@@ -57,6 +61,5 @@ kbd_wait:
         test     al,2
         jnz      kbd_wait
         ret
-
 
 end start

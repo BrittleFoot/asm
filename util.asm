@@ -144,10 +144,32 @@ print_hex_ax:
 
 
 sEndl       db  0Dh, 0Ah, 24h
-endl:
+put_endl:
     push    ax dx
     mov     ax, 0900h
     mov     dx, offset sEndl
     int     21h
     pop     dx ax
     ret
+
+
+put_n_spaces:
+;   n in ax
+    test    ax, ax
+    jz      @@ret
+
+    @@loop:
+        push    ax dx
+        mov     ax, 0900h
+        mov     dx, offset spaces
+        int     21h
+        pop     dx ax
+        dec     ax
+        test    ax, ax
+        jnz     @@loop
+    @@ret:
+    ret
+
+spaces  db  "  $"
+
+
