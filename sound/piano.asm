@@ -91,10 +91,27 @@ main proc far
 
         note_play:; from AL
 
-            mov     bl, 100
-            mul     bl
-            mov     bx, ax
+            ; push    ax
+            ; mov     dl, al
+            ; mov     ax, 0200h
+            ; int     21h
+            ; pop     ax
 
+            push    dx
+            call    translate_into_freq
+            jc      continue
+
+            push    ax
+            mov     ax, 0900h
+            int     21h
+            mov     ax, 0200h
+            mov     dl, 0Dh
+            int     21h
+            pop     ax
+
+            pop     dx
+
+            mov     bx, ax
             call    play
             jmp     continue
 
