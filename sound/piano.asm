@@ -20,7 +20,44 @@ include     myint9.asm
     ;  peek_key
     ;  ks_ptr
 
+include     playlib.asm
 include     notes.asm
+
+
+
+
+check_egg:
+    push    ax bx
+
+    jc      @@ret
+    cmp     al, 80h
+    ja      @@ret
+    cmp     al, 0
+    je      @@ret
+
+    mov     bx, wptr
+    cmp     al, welcome[bx]
+    jne     @@unsuc
+
+    inc     wptr
+
+    cmp     wptr, 7
+    jne     @@ret
+    mov     welcome_enabled, 1
+    jmp     @@ret 
+
+    @@unsuc:
+    mov     wptr, 0
+
+    @@ret:
+    pop bx ax
+    ret
+
+
+welcome db  11h, 12h, 26h, 2Eh, 18h, 32h, 12h
+wptr    dw  0000h
+welcome_enabled     dw 0
+
 
 
 
@@ -69,6 +106,14 @@ main proc far
     main_loop:
 
         call    read_buffer
+        call    check_egg
+
+        cmp     welcome_enabled, 1
+        jne     @@cnt
+
+        call    play_melody
+        mov     welcome_enabled, 0
+        @@cnt:
 
         cmp     al, 01h
         je      break
@@ -91,11 +136,6 @@ main proc far
 
         note_play:; from AL
 
-            ; push    ax
-            ; mov     dl, al
-            ; mov     ax, 0200h
-            ; int     21h
-            ; pop     ax
 
             push    dx
             call    translate_into_freq

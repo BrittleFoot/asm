@@ -72,6 +72,7 @@ push_key:
 
 
 peek_key:
+    cli
     push    bx
 
     cmp     total_pressed, 0
@@ -102,11 +103,13 @@ peek_key:
 
     pop     bx
     clc
+    sti
     ret
     @@empty:
     mov     ks_ptr, 0
     pop     bx
     stc
+    sti
     ret
 
 

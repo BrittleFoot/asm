@@ -52,6 +52,7 @@ SECOND_OCTAVE:
 
 THIRD_OCTAVE_SHARP:
     Note ?
+    Note ?
     Note <"C#", PLAYABLE, 2152>
     Note <"D#", PLAYABLE, 1917>
     Note ?
@@ -61,7 +62,6 @@ THIRD_OCTAVE_SHARP:
     Note ?
 
 
-    Note ?
     Note ?
     Note ?      ;  здесь могла быть ваша октава :)
     Note ?

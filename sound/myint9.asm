@@ -5,7 +5,8 @@ keyboard_state  dw  offset ks_normal
 ;   scancode in AL -- input for all states    
 
 ks_normal:
-    
+
+
     cmp     al, 0E0h
     jae     @@wtf_you_sik_go_gome_boy
 
@@ -14,6 +15,8 @@ ks_normal:
     jae     @@release
 
     @@press:
+
+
     call    press_key
     call    push_key  
     jmp     @@ok
@@ -33,6 +36,14 @@ ks_normal:
 
 
 myint9:
+
+
+    push    ax dx
+    mov     ax, 0200h
+    mov     dl, 1
+    int     21h
+    pop     dx ax
+
     cli
     push    ax
     in      al, 60h
