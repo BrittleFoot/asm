@@ -1,7 +1,7 @@
 include     melody.asm
 
 
-LEN_OF_ONE = 2
+LEN_OF_ONE = 4
 LEN_OF_HALF = LEN_OF_ONE / 2
 
 

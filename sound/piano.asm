@@ -97,12 +97,13 @@ argparse:
     jmp     main
 
 
+counter     dw 0000h
+
 main proc far
     call    acquire_keyboard
 
     initialize_timer
 
-    xor     dx, dx
     main_loop:
 
         call    read_buffer
@@ -126,30 +127,28 @@ main proc far
 
         call    write_out_pressed
 
-        inc     dx
-        cmp     dx, cx
+        inc     counter
+        cmp     counter, cx
         jl      @@ok
-        xor     dx, dx
+        mov     counter, 0
         @@ok:
-        mov     bx, dx
+        mov     bx, counter
         mov     al, pressed[bx]
 
         note_play:; from AL
 
 
-            push    dx
             call    translate_into_freq
             jc      continue
 
-            push    ax
+            push    ax dx
             mov     ax, 0900h
             int     21h
             mov     ax, 0200h
             mov     dl, 0Dh
             int     21h
-            pop     ax
+            pop     dx ax
 
-            pop     dx
 
             mov     bx, ax
             call    play
@@ -161,7 +160,7 @@ main proc far
             speaker_off
 
         continue:
-        jmp main_loop
+        jmp     main_loop
     break:
 
     speaker_off

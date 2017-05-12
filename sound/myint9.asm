@@ -37,13 +37,6 @@ ks_normal:
 
 myint9:
 
-
-    push    ax dx
-    mov     ax, 0200h
-    mov     dl, 1
-    int     21h
-    pop     dx ax
-
     cli
     push    ax
     in      al, 60h
