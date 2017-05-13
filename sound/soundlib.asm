@@ -16,12 +16,14 @@ endm initialize_timer
 
 
 set_freq macro frequency_value
+    push    bx
     mov     bx, frequency_value
 
     mov     ax, bx
     out     TIMER_CONFIG_PORT, al
     mov     al, ah
     out     TIMER_CONFIG_PORT, al
+    pop     bx
 endm set_freq
 
 
