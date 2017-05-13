@@ -1,8 +1,8 @@
 text segment
 
 
-circle_color    db     0Fh
-frame_color     db     0Eh
+circle_color    db  0Fh
+frame_color     db  0Eh
 
 frame_left      dw  50
 frame_top       dw  50
