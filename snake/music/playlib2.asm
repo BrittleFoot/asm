@@ -1,7 +1,7 @@
+include     music\soundlib.asm
 
 STACCATO = 1
 LEGATO   = 2
-
 
 SZ_1     = 8
 SZ_2     = 4
@@ -15,7 +15,6 @@ Muse struc
    modif    dw  0000h
 Muse ends
 
-
 Sound struc
     play_pos      dw    0000h
     music_start   dw    0000h
@@ -24,11 +23,10 @@ Sound struc
 Sound ends
 
 
-
 A:
-include     lalalala.asm
+include     music\lalalala.asm
 B:
-include     welcome.asm
+include     music\welcome.asm
 C:  db '$'
 
 

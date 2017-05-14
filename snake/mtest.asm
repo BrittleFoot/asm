@@ -8,9 +8,7 @@ start:
     jmp main
 
 
-include     soundlib.asm
-include     playlib2.asm
-
+include     music\playlib2.asm
 
 
 
