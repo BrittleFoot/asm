@@ -1,6 +1,8 @@
 BUFFER_SIZE     = 64000
 VMEM_SEGMENT    = 0A000h
 
+SCREEN_WIDTH    = 320
+SCREEN_HEIGHT   = 200
 
 
 segment buffer_segment
@@ -186,7 +188,7 @@ draw_frame  proc c uses ax bx cx dx di si
     mov frame_color, dx
 
 
-    mov     cl, frame_color
+    mov     cx, frame_color
 
     mov     ax, frame_left
     @@top_bot:

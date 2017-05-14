@@ -16,7 +16,7 @@ start:
 
 main proc far
 
-    mov ax, 4c00h
+    mov ax, 4C00h
     int 21h
 main endp
 
