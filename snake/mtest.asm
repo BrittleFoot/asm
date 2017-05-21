@@ -11,12 +11,9 @@ start:
 include     music\playlib2.asm
 
 
-
+counter   dw  0h
 main proc far
 
-    mov     ax, offset welcome
-    call    play_sound
-    
 
     @@while_true:
         xor     ax, ax
@@ -24,8 +21,17 @@ main proc far
         cmp     ah, 1
         je      @@break
 
+        inc     counter
+        test    counter, 1
+        jz      @@o
+        mov     ax, offset welcome
+        jmp lesgo
+        @@o:
+
         mov     ax, offset lalalalalala
-        call    refresh_sound
+
+        lesgo:
+        ; call    refresh_sound
         call    play_sound
 
         jmp     @@while_true

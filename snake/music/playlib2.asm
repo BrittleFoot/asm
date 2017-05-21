@@ -159,7 +159,10 @@ play_sound proc c uses ax bx cx dx
 play_sound endp
 
 stop_play proc c uses ax bx
+    cmp     word ptr old_timer, 0
+    jz      @@none
     call    restore_old_timer_tick
+    @@none:
     speaker_off
     ret
 stop_play endp

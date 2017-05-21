@@ -16,25 +16,124 @@ text segment
 
 
 
-draw_scene      proc
-    call    clear_screen
-    call    draw_frame
-    call    draw_circle
-    call    push_buffer
+counter     dw  0000h
+draw_scene      proc c uses ax bx dx di
+
+    lea     di, scene
+    mov     counter, 0
+
+
+    @@loop:
+        mov     bx, counter
+        call    scene2screen
+
+        push    ax bx
+        mov     ax, word ptr [di].obj_type
+
+
+        lea     bx, [draw_functions]
+        add     bx, ax
+        add     bx, ax
+        mov     dx, word ptr [bx]
+
+        pop     bx ax
+        call    dx
+
+
+        add     di, size Object
+
+        inc     counter
+
+        cmp     counter, SCENE_WIDTH * SCENE_HEIGHT
+        jnz     @@loop
 
     ret
 draw_scene      endp
 
 
+scene2screen    proc c uses dx
+;   args:
+;       bx - scene offset
+;   returns
+;       ax - screen x
+;       bx - screen y
 
-clear_screen    proc
+    mov ax, bx
+    xor bx, bx
+    xor dx, dx
+
+    mov bx, SCENE_WIDTH
+    div bx
+
+    mov     bx, ax
+    mov     ax, dx
+
+    mov     dx, ax
+    shl     ax, 2
+    add     ax, dx
+
+    mov     dx, bx
+    shl     bx, 2   
+    add     bx, dx
+
+    ret
+scene2screen    endp
+
+
+
+
+draw_functions:
+;   for all functions assume that DI points on current object
+;   and    (ax, bx) - screen coords
+    dw  offset tail_none
+    dw  offset tail_snake_head
+    dw  offset tail_snake_body
+    dw  offset tail_snack
+
+
+tail_none: 
+    ret
+
+tail_snake_head:
+    mov     dl, 2Ch
+    jmp     snakedrower
+tail_snake_body:
+    mov     dl, 4Ch
+    jmp     snakedrower
+
+tail_snack:
+    call draw_seed
+    ret
+
+snakedrower:
+    push    si di
+    mov     si, 4
+    mov     di, 4
+    call    draw_frame
+    pop     di si
+    cmp     [di].obj_extra, 11FEh
+    jne     @@ret
+    call    draw_seed
+    @@ret:
+    ret
+
+draw_seed:
+    add  ax, 2
+    add  bx, 2
+    call set_pixel
+    ret
+
+clear_screen    proc c uses ax bx cx si di
+;   al -- color
     push    es
+    push    ax
 
     mov     ax, buffer_segment
     mov     es, ax
     lea     di, [double_buffer]
     xor     di, di
-    xor     ax, ax
+    pop     ax
+    mov     ah, al
     mov     cx, BUFFER_SIZE / 2
     rep     stosw
 
@@ -43,7 +142,7 @@ clear_screen    proc
 clear_screen    endp
 
 
-push_buffer     proc
+push_buffer     proc c uses ax bx cx di si 
     push    es
     push    ds
     mov     ax, VMEM_SEGMENT
@@ -69,7 +168,7 @@ circle_r        dw  0000h
 circle_color    dw  0000h
 
 draw_circle proc c uses ax bx cx dx
-;   brezenhaim algorithm
+;   brezenheim algorithm
 ;   args - (ax, bx) - center coordinates
 ;               cx  - radius
 ;               dl  - color
@@ -215,11 +314,15 @@ draw_frame endp
 
 
 
-set_pixel       proc c uses ax bx dx es
+set_pixel       proc c uses ax bx dx
     ; args:
     ;       ax - column
     ;       bx - row
     ;       cl - color
+    cmp     ax, SCREEN_WIDTH
+    jae     @@ret
+    cmp     bx, SCREEN_HEIGHT  
+    jae     @@ret
 
     xchg    ax, bx
     mov     dx, SCREEN_WIDTH
@@ -231,6 +334,7 @@ set_pixel       proc c uses ax bx dx es
     mov     es, ax
     mov     byte ptr es:[bx], cl
 
+    @@ret:
     ret
 set_pixel       endp
 
