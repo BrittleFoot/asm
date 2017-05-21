@@ -131,6 +131,40 @@ paste_cell proc c uses ax bx
     ret
 paste_cell endp
 
+
+swap_objects proc c
+;   swaps object with coordinates A=(ax, bx) and B=(cx, dx)
+    call    copy_cell       ; tmp = A
+    push    cx dx
+
+    call    get_offset      ; get addr A
+    push    ax               
+
+    mov     ax, cx
+    mov     bx, dx
+    call    get_offset      ; get addr B
+    mov     bx, ax
+    add     bx, offset scene
+    pop     ax
+    call    put_on_scene
+
+    pop     bx ax
+    call    paste_cell
+
+    ret
+swap_objects endp
+
+
+move_cell proc c
+;   _moves_ object (ax, bx) to (ax+cx, ax+dx)
+    call copy_cell
+    add  ax, cx
+    add  bx, dx
+    call paste_cell
+    ret
+move_cell endp
+
+
 temp_obj        Object <0, 0, 0>
 temp_obj1       Object <0, 0, 0>
 temp_obj2       Object <0, 0, 0>

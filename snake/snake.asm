@@ -13,7 +13,7 @@ start:
     jmp     main    
 
 include     timer.asm
-
+include     events.asm
 
 
 SK_W = 11h
@@ -63,14 +63,37 @@ my_keyboard_handler:
     ret 
 
 
-
 old_video_mode:
     vm  db 00h
     pg  db 00h
 
 
+configure_event_subsystem:
+    mov     event_starts, offset events
+    mov     event_ends, offset events_ends
+    ret
 
-world_timer Timer <0, 5, offset update_world>
+
+EVENT_SNACK_EATED = 1
+EVENT_TAIL_EATED  = 2
+EVENT_WALL_EATED  = 3
+EVENT_DEATH       = 4
+
+events:
+    Event <EVENT_SNACK_EATED, 0, offset snack_eated>
+    Event <EVENT_TAIL_EATED,  0, offset tail_eated>
+    Event <EVENT_WALL_EATED,  0, offset wall_eated>
+    Event <EVENT_DEATH,       0, offset death>
+events_ends:
+
+
+
+snake_dead dw 0
+death:
+    mov snake_dead, 1
+
+    ret
+
 
 main proc far
 
@@ -90,9 +113,12 @@ main proc far
 
     call    init_game
 
+    call    configure_event_subsystem
+
     @@main_loop:
         hlt
 
+        call    dispatch_events
         call    update_world    
 
         cli
@@ -103,11 +129,15 @@ main proc far
         sti
 
 
+        cmp  snake_dead, 1
+        je  @@break;
+
         call read_buffer
         jc   @@main_loop    
         cmp  al, 1
         jne  @@main_loop
 
+    @@break:
 
     call release_keyboard
     call stop_play

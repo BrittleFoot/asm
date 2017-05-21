@@ -89,6 +89,7 @@ draw_functions:
     dw  offset tail_snake_head
     dw  offset tail_snake_body
     dw  offset tail_snack
+    dw  offset tail_wall
 
 
 tail_none: 
@@ -122,6 +123,17 @@ draw_seed:
     add  bx, 2
     call set_pixel
     ret
+
+tail_wall:
+    push    si di
+    mov     si, 4
+    mov     di, 4
+    mov     dl, 0
+    call    draw_frame
+    pop     di si
+    ret    
+
+
 
 clear_screen    proc c uses ax bx cx si di
 ;   al -- color

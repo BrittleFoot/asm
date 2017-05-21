@@ -38,39 +38,63 @@ direction_map:
 direction_map_ends:
 
 
+include     mapld.asm
 
 
-init_snake proc c
+scene_place_offset  dw 0
+levelname db "level1.map", 0 
+init_game proc c uses dx ds si es di
+    
+    mov  scene_place_offset, 0
+    mov  ax, cs
+    mov  ds, ax
+    lea  dx, levelname 
+    lea  bx, file_buffer
+    call read_level
+    ; file_buffer contains level
 
-    mov     ax, snake_pos_x
-    mov     bx, snake_pos_x
+    lea  si, file_buffer
 
-    call    get_offset
-    lea     bx, snake_head_obj
-    call    put_on_scene
+    @@fill_level_loop:
+        lodsb
+        cmp     al, 0
+        je      @@break
+        cmp     scene_place_offset, SCENE_WIDTH * SCENE_HEIGHT * size Object
+        jae     @@break
 
-    mov     ax, snake_tail1x
-    mov     bx, snake_tail1y
+        cmp     al, 48
+        je      @@scene_element_none
+        cmp     al, 49
+        je      @@scene_element_wall
+        cmp     al, 's'
+        je      @@scene_element_snake
+        cmp     al, 'e'
+        je      @@scene_element_snack
+        jmp     @@fill_level_loop
 
-    call    get_offset
-    lea     bx, snake_tail_obj
-    call    put_on_scene
+        @@scene_element_none:
+        lea     bx, null_obj
+        jmp     @@place_element
+        @@scene_element_wall:
+        lea     bx, wall_obj
+        jmp     @@place_element
+        @@scene_element_snake:
+        lea     bx, snake_head_obj
+        jmp     @@place_element
+        @@scene_element_snack:
+        lea     bx, snack_obj
+        jmp     @@place_element
 
-    mov     ax, 30
-    mov     bx, 30
+        @@place_element:
+        mov     ax, scene_place_offset
+        call    put_on_scene
 
-    call    get_offset
-    lea     bx, snack
-    call    put_on_scene
+        @@next_element:
 
-    ret
-init_snake endp
+        add     scene_place_offset, size Object
+        jmp     @@fill_level_loop
 
-
-
-init_game proc c
-
-    call init_snake
+    @@break:
 
     ret
 init_game endp
@@ -103,38 +127,6 @@ choose_direction proc c uses ds si
     ret
 choose_direction endp
 
-
-swap_objects proc c
-;   swaps object with coordinates A=(ax, bx) and B=(cx, dx)
-    call    copy_cell       ; tmp = A
-    push    cx dx
-
-    call    get_offset      ; get addr A
-    push    ax               
-
-    mov     ax, cx
-    mov     bx, dx
-    call    get_offset      ; get addr B
-    mov     bx, ax
-    add     bx, offset scene
-    pop     ax
-    call    put_on_scene
-
-    pop     bx ax
-    call    paste_cell
-
-    ret
-swap_objects endp
-
-
-move_cell proc c
-;   _moves_ object (ax, bx) to (ax+cx, ax+dx)
-    call copy_cell
-    add  ax, cx
-    add  bx, dx
-    call paste_cell
-    ret
-move_cell endp
 
 
 coords1 dd 0
@@ -186,15 +178,50 @@ step_on_the_cell proc c uses ax bx di
 
     lea     di, temp_obj3 
     call    store_cell
-    cmp     temp_obj3.obj_extra, 11FEh
 
-    jne     @@ret
+    lea     bx, step_on_handlers
+    add     bx, temp_obj3.obj_type
+    add     bx, temp_obj3.obj_type
+    mov     dx, word ptr [bx]
 
-    mov     temp_obj.obj_extra, 11FEh
+    call    dx
 
     @@ret:
     ret
 step_on_the_cell endp
+
+
+step_on_handlers:
+    dw  offset step_on_empty
+    dw  offset step_on_head
+    dw  offset step_on_tail
+    dw  offset step_on_snack
+    dw  offset step_on_wall
+
+step_on_empty: 
+    cmp     temp_obj3.obj_extra, 11FEh
+    jne     @@ret
+    mov     temp_obj.obj_extra, 11FEh
+
+    @@ret:
+    ret
+
+step_on_head: ret
+
+step_on_tail: 
+
+    ret
+
+step_on_snack: 
+    mov     temp_obj.obj_extra, 11FEh
+    mov     ax, EVENT_SNACK_EATED
+    call    fire_event
+    ret
+step_on_wall: 
+    mov     ax, EVENT_DEATH
+    call    fire_event
+    ret
+
 
 
 
@@ -212,7 +239,6 @@ move_snake proc c uses si ds di es
     ret    
     @@lets_move:
     call    choose_direction
-
 
     add     ax, snake_pos_x
     add     bx, snake_pos_y
@@ -252,8 +278,8 @@ move_snake proc c uses si ds di es
         mov     ax, dx
         stosw
 
-        ldcoords posLast, ax, dx
-        stcoords ax, dx, posNext
+        ldcoords posLast, ax, bx
+        stcoords ax, bx, posNext
 
         jmp     @@loop
     
@@ -268,6 +294,7 @@ move_snake proc c uses si ds di es
     lea     bx, snake_tail_obj
     call    put_on_scene
 
+    ; register as snake part
     ldcoords    posNext, ax, bx
     stosw
     mov     ax, bx
@@ -286,16 +313,47 @@ update_world proc c
 update_world endp
 
 
-snack                Object <3, 1, 11FEh>
-snake_head_obj       Object <1, 1, 0>
+
+
+
+;==========event handlers==========
+
+
+snack_eated proc c uses di
+    lea     ax, lalalalalala
+    call    play_sound
+    ret
+snack_eated endp
+
+
+tail_eated proc c uses di
+
+    ret
+tail_eated endp
+
+
+wall_eated proc c uses di
+
+    ret
+wall_eated endp
+
+
+;================================
+
+
+
+wall_obj             Object <4, 1, 0>
+snack_obj            Object <3, 1, 11FEh>
 snake_tail_obj       Object <2, 1, 0>
+snake_head_obj       Object <1, 1, 0>
 snake_direction     dw  DIRECTION_STOP
 snake_pos:
-    snake_pos_x         dw 0010h
-    snake_pos_y         dw 0010h
-    snake_tail1x        dw 0011h
-    snake_tail1y        dw 0010h
+    snake_pos_x         dw 0002h
+    snake_pos_y         dw 0002h
 snake_body_pos:
     db  SCENE_WIDTH * SCENE_HEIGHT * 4 dup(-1)
 snake_body_ends:
 db  "Hello, World!", 0Dh, 0Ah, 24h
+
+
+file_buffer db SCENE_WIDTH * SCENE_HEIGHT * 2 dup(0)
