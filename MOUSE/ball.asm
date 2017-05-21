@@ -11,7 +11,7 @@ frame_bot       dw  100
 
 circle_x   dw  100
 circle_y   dw  50
-circle_r   dw  25
+circle_r   dw  15
 
 
 change_colors proc c uses ax dx cx
