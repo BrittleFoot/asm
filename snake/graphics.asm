@@ -95,14 +95,47 @@ draw_functions:
 tail_none: 
     ret
 
+drugcolor   db 1
+
 tail_snake_head:
     mov     dl, 2Ch
+    test    snake_status, 1
+    jz      snakedrower
+    mov     dl, drugcolor
+    inc     drugcolor
+    and     drugcolor, 00001111b
     jmp     snakedrower
+
 tail_snake_body:
     mov     dl, 4Ch
+
+    test    [di].obj_dir, 1
+    jnz     colorize
+
+    test    snake_status, 1
+    jnz     colorize
+    jmp     snakedrower
+
+    colorize:
+    inc     drugcolor
+    and     drugcolor, 00001111b
+    mov     dl, drugcolor
+    mov     cl, drugcolor
+
     jmp     snakedrower
 
 tail_snack:
+
+    mov     dl, 1
+    mov     cl, 1
+    cmp     [di].obj_extra, 0C0CAh
+    jne      @@drawseed
+    inc     drugcolor
+    and     drugcolor, 00001111b
+    mov     dl, drugcolor
+    mov     cl, drugcolor
+
+    @@drawseed:
     call draw_seed
     ret
 
@@ -119,12 +152,37 @@ snakedrower:
     ret
 
 draw_seed:
-    add  ax, 2
-    add  bx, 2
+    add  bx, 1
+    add  ax, 1
     call set_pixel
+    add  ax, 1
+    call set_pixel
+    add  ax, 1
+    call set_pixel
+    sub  ax, 3
+    add  bx, 1
+    add  ax, 1
+    call set_pixel
+    add  ax, 1
+    call set_pixel
+    add  ax, 1
+    call set_pixel
+    sub  ax, 3
+    add  bx, 1
+    add  ax, 1
+    call set_pixel
+    add  ax, 1
+    call set_pixel
+    add  ax, 1
+    call set_pixel
+    sub  ax, 3
+    
     ret
 
 tail_wall:
+    cmp     [di].obj_extra, 1
+    je      @@wall2
+
     push    si di
     mov     si, 4
     mov     di, 4
@@ -133,6 +191,23 @@ tail_wall:
     pop     di si
     ret    
 
+    @@wall2:
+
+    push    si di
+    mov     si, 4
+    mov     di, 4
+    mov     dl, 0
+    call    draw_frame
+    add     ax, 1
+    add     bx, 1
+    mov     si, 2
+    mov     di, 2
+    call    draw_frame
+    add     ax, 1
+    add     bx, 1
+    call    set_pixel
+    pop     di si
+    ret    
 
 
 clear_screen    proc c uses ax bx cx si di
@@ -350,6 +425,99 @@ set_pixel       proc c uses ax bx dx
     ret
 set_pixel       endp
 
+get_pixel_addr  proc
+        ; args:
+        ;       ax - column
+        ;       bx - row
+        ; ret:
+        ;       bx - address of pixel in double buffer
+
+        push    dx
+        xchg    ax, bx
+        mov     dx, 320
+        mul     dx
+        add     bx, ax
+        add     bx, offset double_buffer
+
+        pop     dx
+        ret
+get_pixel_addr  endp
+
+
+bgrnd   db  2
+draw_char       proc c near uses ax bx cx si di ds es
+        ; args:
+        ;       AX = column
+        ;       BX = row
+        ;       CH = character to write
+        ; ret:
+        ;       none
+        call    get_pixel_addr
+        mov     di, bx
+
+        mov     ax, 0f000h
+        mov     ds, ax
+
+        mov     ax, buffer_segment
+        mov     es, ax
+
+        mov     cl, ch
+        xor     ch, ch
+        mov     ax, cx
+        mov     cl, 3
+        shl     ax, cl
+
+        mov     si, 0fa6eh
+        add     si, ax
+
+        mov     cx, 8
+@@2:
+        lodsb
+        mov     ah, 80h
+@@1:
+        test    al, ah
+        jz      @@bg
+
+        mov     bl, 13h
+        jmp     @@continue
+
+@@bg:
+        mov     bl, 2
+
+@@continue:
+        mov     es:[di], bl
+
+        inc     di
+        shr     ah, 1
+
+        test    ah, ah
+        jnz     @@1
+
+        add     di, 320 - 8
+        dec     cx
+        jnz     @@2
+
+        ret
+draw_char       endp
+
+
+draw_string proc c uses di
+
+    mov     di, dx
+
+    @@loop:
+        mov     ch, byte ptr [di]
+        cmp     ch, 0
+        je      @@ret
+        call    draw_char
+        add     ax, 8
+        inc     di
+        jmp     @@loop
+    
+
+    @@ret:
+    ret
+draw_string endp
 
 
 text ends

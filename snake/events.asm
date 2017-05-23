@@ -53,7 +53,9 @@ dispatch_events proc c uses di
         cmp     [di].fired, 0
         je      @@continue
 
+        push    di
         call    [di].callback
+        pop     di
         mov     [di].fired, 0
 
         @@continue:

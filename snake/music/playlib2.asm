@@ -27,19 +27,40 @@ A:
 include     music\lalalala.asm
 B:
 include     music\welcome.asm
-C:  db '$'
+C:
+include     music\ost.asm
+D:
+include     music\sot.asm
+E:
+include     music\end.asm
+F:  db '$'
+
 
 
 ; in all callbacks DI points to current sound
 
-lalalalalala     Sound   <0, offset A, offset B, offset dummy>
+lalalalalala     Sound   <0, offset A, offset B, offset continue_ost>
 welcome          Sound   <0, offset B, offset C, offset replay>
+ost              Sound   <0, offset C, offset D, offset replay>
+sot              Sound   <0, offset D, offset E, offset replay>
+endsound         Sound   <0, offset E, offset F, offset dummy>
 
 
 dummy: ret
 
 replay:
     mov     ax, di
+    call    play_sound
+    ret
+
+
+continue_ost:
+    lea     ax, ost
+    call    play_sound
+    ret
+
+continue_sot:
+    lea     ax, sot
     call    play_sound
     ret
 

@@ -62,6 +62,26 @@ put_on_scene proc c uses ax bx di
     ret
 put_on_scene endp
 
+take_from_scene proc c uses ax bx ds si di
+;   _takes_ object from the scene to bx offset
+;   args:
+;       ax - offset on scene (like in put_on_scene)
+;       bx - pointer to a target object
+
+    lea  si, scene
+    add  si, ax
+    mov  ax, cs
+    mov  ds, ax
+
+    lodsw
+    mov  [bx].obj_type, ax
+    lodsw
+    mov  [bx].obj_dir,  ax
+    lodsw
+    mov  [bx].obj_extra,  ax
+    ret
+take_from_scene endp
+
 
 clear_cell proc c uses ax bx
 ;   _clears_ object from the scene
